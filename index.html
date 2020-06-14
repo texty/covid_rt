@@ -164,6 +164,14 @@
                 .attr("id", function(d){ return d.key});
 
 
+        multiple.append("line")
+                .attr("x1", 0)
+                .attr("x2", chartInnerWidth)
+                .attr("y1",  yScale(1))
+                .attr("y2",  yScale(1))
+                .attr("stroke", "grey");
+
+
         multiple.append("clipPath")
                 .attr("id", "clip-above")
                 .append("rect")
@@ -198,7 +206,9 @@
                 .attr("class", "x axis")
                 .call(d3.axisBottom(xScale)
                         .ticks(2)
-                        .tickFormat(function(d) { return formatDate(d) }) );
+                        .tickFormat(function(d) { return formatDate(d) })
+                        .tickValues([min_date, max_date])
+                );
 
         multiple.append("g")
                 .attr("class", "y axis")
@@ -212,7 +222,7 @@
             let current_data = nested.filter(function(d){ return d.key === current_id });
 
             //get week ago
-            var ourDate = new Date();
+            var ourDate = new Date(max_date);
             var borderDate = ourDate.getDate() - 7;
             ourDate.setDate(borderDate);
 
