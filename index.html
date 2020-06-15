@@ -15,7 +15,7 @@
     }
 
     path.domain {
-        display: none;
+        stroke: lightgrey;
     }
 
     g.tick line {
@@ -101,6 +101,12 @@
     <tr data="Донецька">
         <td>Донецька</td>
         <td>1.22</td>
+        <td></td>
+    </tr>
+
+    <tr data="Полтавська">
+        <td>Полтавська</td>
+        <td>1.02</td>
         <td></td>
     </tr>
 
@@ -205,7 +211,8 @@
 
         const yScale = d3.scaleLinear()
                 .range([chartInnerHeight, 0])
-                .domain([d3.min(data, function(d){ return d.lower_50}) - 0.1, d3.max(data, function(d){ return d.upper_50}) + 0.3]);
+                .domain([0.6, 1.6]);
+//                .domain([d3.min(data, function(d){ return d.lower_50}) - 0.1, d3.max(data, function(d){ return d.upper_50}) + 0.3]);
 
         const xScale = d3.scaleTime()
                 .domain([min_date, max_date])
@@ -256,7 +263,7 @@
 
         /* region label */
         var text = multiple.append("text")
-                .attr("transform", "translate(0," + 0 + ")")
+                .attr("transform", "translate(0," + -10 + ")")
                 .attr("x", "0")
                 .attr("text-anchor", "start")
                 .style("font-weight", "bold")

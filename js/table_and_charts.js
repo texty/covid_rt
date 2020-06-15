@@ -309,7 +309,7 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
                 .attr("d", d3.line()
                     .x(function (d, i) { return xScale(d.date);})
                     .y(function (d) { return yScale(d.median); })
-                    (df.filter(function (p) { return p.date.getTime() > ourDate.getTime() })   )
+                    (df.filter(function (p) { return p.date.getTime() >= ourDate.getTime() })   )
                 )
                 .attr("fill", "none")
                 .attr("stroke-dasharray", "3,2");
