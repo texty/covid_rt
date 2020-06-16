@@ -1,27 +1,35 @@
 /**
- * Created by yevheniia on 15.06.20.
+ * Created by yevheniia on 16.06.20.
  */
+Promise.all([
+    d3.csv("data/rt_2020_06_12.csv"),
+    d3.csv("data/test_data.csv")
+]).then(function(data){
 
-d3.csv("data/rt_2020_06_12.csv").then(function(data) {
+    /* розміри */
+    var chartOuterWidth = d3.select("#rt-chart-wrapper").node().getBoundingClientRect().width;
+    var chartInnerWidth = chartOuterWidth - 80;
+    var chartOuterHeight = 400;
+    var chartInnerHeight = 320;
 
+    /* загальні змінні */
     const parseDate = d3.timeParse("%Y-%m-%d");
     const formatDate = d3.timeFormat("%d-%m");
+    const bisectDate = d3.bisector(function (d) { return d.date; }).left;
 
-    var bisectDate = d3.bisector(function (d) {
-        return d.date;
-    }).left;
-
-
-    const min_date = d3.min(data, function (d) {
-        return parseDate(d.date)
-    });
     
-    const max_date = d3.max(data, function (d) {
-        return parseDate(d.date)
-    });
+    const min_date_rt = d3.min(data[0], function (d) { return parseDate(d.date) });
+    const max_date_rt = d3.max(data[0], function (d) { return parseDate(d.date) });
+
+    const min_date_bars = d3.min(data[1], function (d) { return parseDate(d.zvit_date) });
+    const max_date_bars = d3.max(data[1], function (d) { return parseDate(d.zvit_date) });
 
 
-    data.forEach(function (d) {
+    const ourDate = new Date(max_date_rt);
+    const borderDate = ourDate.getDate() - 7;
+    ourDate.setDate(borderDate);
+
+    data[0].forEach(function (d) {
         d.date = parseDate(d.date);
         d.mean = +d.mean;
         d.median = +d.median;
@@ -31,33 +39,27 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
         d.upper_90 = +d.upper_90;
     });
 
-
-    let chartOuterWidth = d3.select("#rt-chart-wrapper").node().getBoundingClientRect().width;
-    var chartInnerWidth = chartOuterWidth - 80;
-
-    var chartOuterHeight = 400;
-    var chartInnerHeight = 320;
-
-
-    var ourDate = new Date(max_date);
-    var borderDate = ourDate.getDate() - 7;
-    ourDate.setDate(borderDate);
-    
-    let borderRt = data[0].filter(function (d) {
-        return formatDate(d.date) === formatDate(ourDate) && d.region === "Ukraine"
+    data[1].forEach(function (d) {
+        d.zvit_date = parseDate(d.zvit_date);
+        d.nszy = +d.nszy;
+        d.additional = +d.additional;
     });
 
-    var filtered = data.filter(function (d) {
-        return d.region === "Ukraine"
-    });
 
-    const yScale = d3.scaleLinear()
+    var borderRt = data[0].filter(function (d) { return formatDate(d.date) === formatDate(ourDate) && d.region === "Ukraine"  });
+
+
+    var filtered_rt = data[0].filter(function (d) { return d.region === "Ukraine" });
+    var filtered_bars = data[1].filter(function(d){ return d.region === "Ukraine"});
+
+
+    const yScale_rt = d3.scaleLinear()
         .domain([0.6, 1.6])
         .range([chartInnerHeight, 0]);
 
 
-    const xScale = d3.scaleTime()
-        .domain([min_date, max_date])
+    const xScale_rt = d3.scaleTime()
+        .domain([min_date_rt, max_date_rt])
         .range([0, chartInnerWidth]);
 
 
@@ -72,8 +74,8 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
     const borderLine = svgRt.append("line")
         .attr("x1", 0)
         .attr("x2", chartInnerWidth)
-        .attr("y1", yScale(1))
-        .attr("y2", yScale(1))
+        .attr("y1", yScale_rt(1))
+        .attr("y2", yScale_rt(1))
         .attr("stroke", "grey");
 
     var clipUp =  svgRt.append("clipPath")
@@ -109,12 +111,12 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
     svgRt.append("g")
         .attr("transform", "translate(0," + chartInnerHeight + ")")
         .attr("class", "x axis")
-        .call(d3.axisBottom(xScale)
+        .call(d3.axisBottom(xScale_rt)
             .ticks(2)
             .tickFormat(function (d) {
                 return formatDate(d)
             })
-            .tickValues([min_date, max_date])
+            .tickValues([min_date_rt, max_date_rt])
         );
 
     svgRt.append("g")
@@ -152,15 +154,15 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
 
     //7 days circle
     var smallCircle = svgRt.append("circle")
-        .attr("cx", xScale(ourDate))
-        .attr("cy", yScale(borderRt[0].median))
+        .attr("cx", xScale_rt(ourDate))
+        .attr("cy", yScale_rt(borderRt[0].median))
         .attr("fill", borderRt[0].median > 1 ? 'rgb(235, 83, 88)' : 'rgb(53, 179, 46)')
         .attr("r", 3);
 
 
     var circleLabel = svgRt.append("text")
-        .attr("x", xScale(ourDate) - 15)
-        .attr("y", yScale(borderRt[0].median) + 16)
+        .attr("x", xScale_rt(ourDate) - 15)
+        .attr("y", yScale_rt(borderRt[0].median) + 16)
         .attr("fill", borderRt[0].median > 1 ? 'rgb(235, 83, 88)' : 'rgb(53, 179, 46)')
         .text(borderRt[0].median.toFixed(2))
         .style("font-size", "12px");
@@ -176,8 +178,8 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
         .style("stroke", "grey")
         .style("stroke-dasharray", "3.3")
         .style("opacity", 0.5)
-        .attr("y1", yScale(1.6))
-        .attr("y2", yScale(0.6));
+        .attr("y1", yScale_rt(1.6))
+        .attr("y2", yScale_rt(0.6));
 
     focus.append("text")
         .attr("class", "text-date")
@@ -202,11 +204,10 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
         });
 
 
-    drawRt(filtered);
+    drawRt(filtered_rt);
 
 
     function drawRt(df){
-
 
         let yMin = d3.min(df, function (d) { return d.lower_50 });
         let yMax = d3.max(df, function (d) { return d.lower_50 });
@@ -219,8 +220,8 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
                 return formatDate(d.date) === formatDate(ourDate)
             });
 
-            yScale.domain([0.6, 1.6]);
-            xScale.range([0, chartInnerWidth]);
+            yScale_rt.domain([0.6, 1.6]);
+            xScale_rt.range([0, chartInnerWidth]);
 
             d3.select('#main-rt').attr("width", chartOuterWidth);
             svgRt.attr("width", chartOuterWidth);
@@ -232,7 +233,7 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
             svgRt.select(".y.axis")
                 .transition()
                 .duration(0)
-                .call(d3.axisLeft(yScale)
+                .call(d3.axisLeft(yScale_rt)
                     .ticks(5)
                     .tickSize(-chartInnerWidth));
 
@@ -240,47 +241,47 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
             svgRt.select(".x.axis")
                 .transition()
                 .duration(500)
-                .call(d3.axisBottom(xScale)
+                .call(d3.axisBottom(xScale_rt)
                     .ticks(2)
                     .tickFormat(function (d) {
                         return formatDate(d)
                     })
-                    .tickValues([min_date, max_date]));
+                    .tickValues([min_date_rt, max_date_rt]));
 
             clipUp
                 .transition()
                 .duration(0)
-                .attr("height", yScale(1))
+                .attr("height", yScale_rt(1))
                 .attr("width", chartInnerWidth);
 
             clipDown
                 .transition()
                 .duration(0)
-                .attr("y", yScale(1))
+                .attr("y", yScale_rt(1))
                 .attr("width", chartInnerWidth)
-                .attr("height", chartInnerHeight - yScale(1));
+                .attr("height", chartInnerHeight - yScale_rt(1));
 
             borderLine
                 .transition()
                 .duration(500)
                 .attr("x1", 0)
                 .attr("x2", chartInnerWidth)
-                .attr("y1", yScale(1))
-                .attr("y2", yScale(1));
+                .attr("y1", yScale_rt(1))
+                .attr("y2", yScale_rt(1));
 
 
             smallCircle
                 .transition()
                 .duration(500)
-                .attr("cx", xScale(ourDate))
-                .attr("cy", yScale(borderRt_new[0].median))
+                .attr("cx", xScale_rt(ourDate))
+                .attr("cy", yScale_rt(borderRt_new[0].median))
                 .attr("fill", borderRt_new[0].median > 1 ? 'rgb(235, 83, 88)' : 'rgb(53, 179, 46)');
 
             circleLabel
                 .transition()
                 .duration(500)
-                .attr("x", xScale(ourDate))
-                .attr("y", yScale(borderRt_new[0].median) + 16)
+                .attr("x", xScale_rt(ourDate))
+                .attr("y", yScale_rt(borderRt_new[0].median) + 16)
                 .attr("fill", borderRt_new[0].median > 1 ? 'rgb(235, 83, 88)' : 'rgb(53, 179, 46)')
                 .text(borderRt_new[0].median.toFixed(2));
 
@@ -292,8 +293,8 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
                     return "url(#clip-" + d + ")";
                 })
                 .attr("d", d3.line()
-                    .x(function (d, i) { return xScale(d.date);})
-                    .y(function (d) { return yScale(d.median); })
+                    .x(function (d, i) { return xScale_rt(d.date);})
+                    .y(function (d) { return yScale_rt(d.median); })
                     (df.filter(function (p) {
                         return p.date.getTime() <= ourDate.getTime() })  )
                 )
@@ -307,8 +308,8 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
                     return "url(#clip-" + d + ")";
                 })
                 .attr("d", d3.line()
-                    .x(function (d, i) { return xScale(d.date);})
-                    .y(function (d) { return yScale(d.median); })
+                    .x(function (d, i) { return xScale_rt(d.date);})
+                    .y(function (d) { return yScale_rt(d.median); })
                     (df.filter(function (p) { return p.date.getTime() >= ourDate.getTime() })   )
                 )
                 .attr("fill", "none")
@@ -321,12 +322,12 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
                     return "url(#clip-" + d + ")";
                 })
                 .attr("d", d3.area()
-                    .x(function (d, i) { return xScale(d.date); })
-                    .y0(function (d) { return yScale(d.upper_50); })
-                    .y1(function (d) { return yScale(d.lower_50); })
+                    .x(function (d, i) { return xScale_rt(d.date); })
+                    .y0(function (d) { return yScale_rt(d.upper_50); })
+                    .y1(function (d) { return yScale_rt(d.lower_50); })
                     (df)
                 );
-            } /* end of redraw RT*/
+        } /* end of redraw RT*/
 
         redrawRt();
 
@@ -336,45 +337,171 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
 
         /* mouseover */
         function mousemove() {
-            var x0 = xScale.invert(d3.mouse(this)[0]),
+            var x0 = xScale_rt.invert(d3.mouse(this)[0]),
                 i = bisectDate(df, x0, 1),
                 d0 = df[i - 1],
                 d1 = df[i],
                 d = x0 - d0.date > d1.date - x0 ? d1 : d1;
-            focus.attr("transform", "translate(" + xScale(d.date) + "," + 0 + ")");
+            focus.attr("transform", "translate(" + xScale_rt(d.date) + "," + 0 + ")");
 
 
             focus.select("text.text-date")
                 .attr("x", function () {
-                    return xScale(d.date) > (chartInnerWidth / 2) ? -( this.getBBox().width + 9) : 9
+                    return xScale_rt(d.date) > (chartInnerWidth / 2) ? -( this.getBBox().width + 9) : 9
                 })
                 .html(d3.timeFormat("%d-%m, %Y")(d.date));
 
 
             focus.select("text.text-Rt")
                 .attr("x", function () {
-                    return xScale(d.date) > (chartInnerWidth / 2) ? -( this.getBBox().width + 9) : 9
+                    return xScale_rt(d.date) > (chartInnerWidth / 2) ? -( this.getBBox().width + 9) : 9
                 })
                 .html("R: " + d.median.toFixed(2));
         }
 
         /* window resize */
-           window.addEventListener("resize", redrawRt);
+        window.addEventListener("resize", redrawRt);
+    }
+
+
+
+    /* -----------------------------
+            draw bars -------------- */
+
+
+    const svgBars = d3.select("#amount-chart")
+        .append("svg")
+        .attr("width", chartOuterWidth)
+        .attr("height", chartOuterHeight)
+        .attr("id", "main-amount")
+        .append("g")
+        .attr("transform", "translate(50,50)");
+
+    const subgroups = ["nszy","additional"];
+
+    var groups = d3.map(filtered_bars, function (d) { return (d.zvit_date) }).keys();
+
+    const color = d3.scaleOrdinal()
+        .domain(subgroups)
+        .range(['grey', 'pink']);
+
+    const xScale = d3.scaleBand()
+        .domain(groups)
+        .range([0, chartInnerWidth])
+        .padding([0.2]);
+
+    const yScale = d3.scaleLinear()
+        .domain([0, d3.max(filtered_bars, function(d) { return d.nszy + d.additional})])
+        .range([chartInnerHeight, 0]);
+
+    svgBars.append("g")
+        .attr("class", "y-axis");
+
+
+    svgBars.append("g")
+        .attr("class", "x-axis")
+        .attr("transform", "translate(0," + chartInnerHeight + ")");
+
+
+    drawBars(filtered_bars);
+
+    function drawBars(df) {
+
+        groups = d3.map(df, function (d) { return (d.zvit_date) }).keys();
+
+        yScale.domain([0, d3.max(df, function(d) { return d.nszy + d.additional})]);
+
+        var stackedData = d3.stack()
+            .keys(subgroups)
+            (df);
+
+        redrawBars();
+
+        function redrawBars(){
+            var chartOuterWidth = d3.select("#rt-chart-wrapper").node().getBoundingClientRect().width;
+            var chartInnerWidth = chartOuterWidth - 80;
+            var chartOuterHeight = 400;
+            var chartInnerHeight = 320;
+
+            xScale
+                .domain(groups)
+                .range([0, chartInnerWidth]);
+
+            svgBars.select(".y-axis")
+                .transition()
+                .duration(0)
+                .call(d3.axisLeft(yScale)
+                    .ticks(5)
+                    .tickSize(-chartInnerWidth));
+
+
+            svgBars.select(".x-axis")
+                .transition()
+                .duration(500)
+                .call(d3.axisBottom(xScale)
+                    .ticks(2)
+                    .tickFormat(function (d) {
+                        return formatDate(d)
+                    })
+                    .tickValues([min_date_bars, max_date_bars]));
+
+            // Show the bars
+            var barsLayer = svgBars
+                .selectAll("g.bars-wrapper")
+                .data(stackedData);
+
+            barsLayer.exit().remove();
+
+            barsLayer
+                .enter()
+                .append("g")
+                .attr("class", "bars-wrapper")
+                .attr("fill", function (d) {
+                    return color(d.key);
+                });
+
+            var bars = svgBars
+                .selectAll("g.bars-wrapper")
+                .selectAll("rect")
+                .data(function (d) { return d; });
+
+            bars.exit().remove();
+
+            bars.enter()
+                .append("rect")
+                .attr("x", function (d) { return xScale(d.data.zvit_date); })
+                .attr("y", function (d) { return chartInnerHeight })
+                .attr("width", xScale.bandwidth())
+                .merge(bars)
+                .transition()
+                .duration(500)
+                .attr("x", function (d) { return xScale(d.data.zvit_date); })
+                .attr("y", function (d) { return yScale(d[1]); })
+                .attr("height", function (d) { return yScale(d[0]) - yScale(d[1]); })
+        }
+
+        window.addEventListener("resize", redrawBars);
 
     }
 
+
+
+
+    /* radraw on table click */
     d3.selectAll("tr").on("click", function(d){
         let region = d3.select(this).attr("data");
 
-        let newData =  data.filter(function (d) {
+        let new_rtData =  data[0].filter(function (d) {
             return d.region === region
         });
 
-        drawRt(newData);
+        let new_barsData = data[1].filter(function (d) {
+            return d.region === region
+        });
+
+        drawRt(new_rtData);
+        drawBars(new_barsData);
 
     })
-
-
-
 
 });
