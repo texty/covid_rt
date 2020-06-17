@@ -63,7 +63,7 @@ Promise.all([
         tbody = table.append('tbody');
 
     thead.append('tr').selectAll('th')
-        .data(["регіон", "Rt", "кількість"]).enter()
+        .data(["регіон", "Rt ("+ formatDate(max_date_rt) + ")", "нових випадків ("+ formatDate(max_date_rt) + ")" ]).enter()
         .append('th')
         .text(function (d) { return d; });
 
@@ -73,22 +73,24 @@ Promise.all([
         .append('tr')
         .attr("id", function(d, i){ return "row-"+ i })
         .attr("data", function (d) { return d.region  })
-        .style("background-color", function(d){ return d.region === "Україна"? "lightgrey": "none" });
+        .style("background-color", function(d){ return d.region === "Україна"  ? "lightgrey": "none" });
        
     rows.append('td')
         .attr("id", function (d) { return d.id  })
         .text(function (d) { return d.region;  })
-        .style("font-weight", function(d){ return d.region === "Україна" ? "bold": "normal" });
+        .style("font-weight", function(d){ return d.region === "Україна" || d.region === "м. Київ" ? "bold": "normal" });
 
 
 
     rows.append('td')
-        .text(function (d) {   return d.median.toFixed(2); });
+        .text(function (d) {   return d.median.toFixed(2); })
+        .style("font-weight", function(d){ return d.region === "Україна" || d.region === "м. Київ" ? "bold": "normal" });;
 
     rows.append('td')
         .text(function (d) {   return d.positive; });
 
-    rows.sort( function(a, b) { return b.median - a.median });
+    rows.sort( function(a, b) { return b.median - a.median })
+        .style("font-weight", function(d){ return d.region === "Україна" || d.region === "м. Київ" ? "bold": "normal" });;
 
 
 
@@ -428,7 +430,7 @@ Promise.all([
 
     const color = d3.scaleOrdinal()
         .domain(subgroups)
-        .range(['grey', 'pink']);
+        .range(['grey', '#89cff0']);
 
     const xScale = d3.scaleBand()
         .domain(groups)
@@ -541,7 +543,8 @@ Promise.all([
 
 
         let region = d3.select(this).attr("data");
-        let row_id = d3.select(this).attr("id");
+        let row_top = d3.select(this).node().getBoundingClientRect().top;
+        console.log(d3.select(this).node());
 
         let new_rtData =  data[0].filter(function (d) {
             return d.region === region
@@ -554,12 +557,12 @@ Promise.all([
         drawRt(new_rtData);
         drawBars(new_barsData);
 
-        $('html, body').animate({
-            scrollTop: $("#charts-container").offset().top
-        }, 800, function(){})
+
+       document.getElementById('charts-container').scrollIntoView({block: 'start', behavior: 'smooth'});
 
 
-        })
+
+    })
 
 });
 
@@ -588,3 +591,4 @@ function leftJoin(left, right, left_id, right_id, col_to_join) {
     });
     return result;
 }
+
