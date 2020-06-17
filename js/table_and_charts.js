@@ -44,11 +44,11 @@ d3.csv("data/rt_2020_06_12.csv").then(function(data) {
     ourDate.setDate(borderDate);
     
     let borderRt = data[0].filter(function (d) {
-        return formatDate(d.date) === formatDate(ourDate) && d.region === "Ukraine"
+        return formatDate(d.date) === formatDate(ourDate) && d.region === "Україна"
     });
 
     var filtered = data.filter(function (d) {
-        return d.region === "Ukraine"
+        return d.region === "Україна"
     });
 
     const yScale = d3.scaleLinear()

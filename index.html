@@ -70,48 +70,63 @@
         /*background-color: lightgrey;*/
     }
 
-    @media(max-width: 812px){
-        #charts-container {
-            display: block;
-        }
+    table {
+        width: 500px;
+        margin: 50px auto;
+        border-collapse: collapse;
     }
 
-    table {
-        width: 50%;
-        margin: 50px auto;
+    thead tr {
+        border: 1px solid lightgrey;
+    }
+
+    th {
+        text-align: left;
+        padding: 5px;
+        text-transform: uppercase;
     }
 
     td {
         cursor: pointer;
         padding: 5px;
         border: 1px solid lightgrey;
+    }
 
+
+    @media(max-width: 812px){
+        #charts-container {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+        }
     }
 </style>
 <body>
 
 <table>
-    <thead></thead>
-    <tbody>
-    <tr data="Ukraine">
-        <td>Україна</td>
-        <td>1.06</td>
-        <td></td>
-    </tr>
+    <!--<thead></thead>-->
+    <!--<tbody>-->
+    <!--<tr data="Україна">-->
+        <!--<td>Україна</td>-->
+        <!--<td>1.06</td>-->
+        <!--<td></td>-->
+    <!--</tr>-->
 
-    <tr data="Донецька">
-        <td>Донецька</td>
-        <td>1.22</td>
-        <td></td>
-    </tr>
+    <!--<tr data="Донецька">-->
+        <!--<td>Донецька</td>-->
+        <!--<td>1.22</td>-->
+        <!--<td></td>-->
+    <!--</tr>-->
 
-    <tr data="Полтавська">
-        <td>Полтавська</td>
-        <td>1.02</td>
-        <td></td>
-    </tr>
+    <!--<tr data="Полтавська">-->
+        <!--<td>Полтавська</td>-->
+        <!--<td>1.02</td>-->
+        <!--<td></td>-->
+    <!--</tr>-->
 
-    </tbody>
+    <!--</tbody>-->
 
 </table>
 
@@ -140,6 +155,8 @@
 <script src="lib/jquery-3.3.1.js"></script>
 <script src="lib/d3v5.min.js"></script>
 <script src="lib/share-behavior.js"></script>
+<script src="lib/underscore-min.js"></script>
+
 <script src="js/bind.js"></script>
 <!--<script src="js/table_and_charts.js"></script>-->
 <!--<script src="js/bar_chart.js"></script>-->
@@ -149,7 +166,7 @@
 <script>
 
     const sort_keys = [
-        "Ukraine",
+        "Україна",
         "Донецька",
         "Луганська",
         "Дніпропетровська",
@@ -230,7 +247,7 @@
                 .append("svg")
                 .attr("width", chartOuterWidth)
                 .attr("height", chartOuterHeight)
-                .attr("class", function(d) { return d.key === "Ukraine"? "ukraine" : "multiple"});
+                .attr("class", function(d) { return d.key === "Україна"? "ukraine" : "multiple"});
 
         const multiple = svg.append("g")
                 .attr("transform", "translate(" + 50 + "," + 50 + ")")

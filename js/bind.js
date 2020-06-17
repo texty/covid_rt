@@ -2,9 +2,10 @@
  * Created by yevheniia on 16.06.20.
  */
 Promise.all([
-    d3.csv("data/rt_2020_06_12.csv"),
-    d3.csv("data/test_data.csv")
+    d3.csv("data/rt_2020_06_15.csv"),
+    d3.csv("data/states.csv")
 ]).then(function(data){
+
 
     /* розміри */
     var chartOuterWidth = d3.select("#rt-chart-wrapper").node().getBoundingClientRect().width;
@@ -21,8 +22,9 @@ Promise.all([
     const min_date_rt = d3.min(data[0], function (d) { return parseDate(d.date) });
     const max_date_rt = d3.max(data[0], function (d) { return parseDate(d.date) });
 
-    const min_date_bars = d3.min(data[1], function (d) { return parseDate(d.zvit_date) });
-    const max_date_bars = d3.max(data[1], function (d) { return parseDate(d.zvit_date) });
+    const min_date_bars = d3.min(data[1], function (d) { return parseDate(d.date) });
+    const max_date_bars = d3.max(data[1], function (d) { return parseDate(d.date) });
+
 
 
     const ourDate = new Date(max_date_rt);
@@ -40,17 +42,60 @@ Promise.all([
     });
 
     data[1].forEach(function (d) {
-        d.zvit_date = parseDate(d.zvit_date);
-        d.nszy = +d.nszy;
-        d.additional = +d.additional;
+        d.date = parseDate(d.date);
+        d.base = +d.positive_raw;
+        d.positive = +d.positive;
+        d.additional = d.positive - d.base;
     });
 
 
-    var borderRt = data[0].filter(function (d) { return formatDate(d.date) === formatDate(ourDate) && d.region === "Ukraine"  });
+
+    /* таблиця */
+    var rt_table = data[0].filter(function(d) { return formatDate(d.date) === formatDate(max_date_rt)  });
+    var bars_table = data[1].filter(function(d) { return formatDate(d.date) === formatDate(max_date_rt)  });
+
+    var table_data = leftJoin(rt_table, bars_table, "region", "state", "positive");
+
+    var table = d3.select('table')
+        .append('table');
+
+    var thead = table.append('thead'),
+        tbody = table.append('tbody');
+
+    thead.append('tr').selectAll('th')
+        .data(["регіон", "Rt", "кількість"]).enter()
+        .append('th')
+        .text(function (d) { return d; });
+
+    var rows = tbody.selectAll('tr')
+        .data(table_data)
+        .enter()
+        .append('tr')
+        .attr("id", function(d, i){ return "row-"+ i })
+        .attr("data", function (d) { return d.region  })
+        .style("background-color", function(d){ return d.region === "Україна"? "lightgrey": "none" });
+       
+    rows.append('td')
+        .attr("id", function (d) { return d.id  })
+        .text(function (d) { return d.region;  })
+        .style("font-weight", function(d){ return d.region === "Україна" ? "bold": "normal" });
 
 
-    var filtered_rt = data[0].filter(function (d) { return d.region === "Ukraine" });
-    var filtered_bars = data[1].filter(function(d){ return d.region === "Ukraine"});
+
+    rows.append('td')
+        .text(function (d) {   return d.median.toFixed(2); });
+
+    rows.append('td')
+        .text(function (d) {   return d.positive; });
+
+    rows.sort( function(a, b) { return b.median - a.median });
+
+
+
+    var borderRt = data[0].filter(function (d) { return formatDate(d.date) === formatDate(ourDate) && d.region === "Україна"  });
+
+    var filtered_rt = data[0].filter(function (d) { return d.region === "Україна" });
+    var filtered_bars = data[1].filter(function(d){ return d.state === "Україна"});
 
 
     const yScale_rt = d3.scaleLinear()
@@ -377,9 +422,9 @@ Promise.all([
         .append("g")
         .attr("transform", "translate(50,50)");
 
-    const subgroups = ["nszy","additional"];
+    const subgroups = ["base","additional"];
 
-    var groups = d3.map(filtered_bars, function (d) { return (d.zvit_date) }).keys();
+    var groups = d3.map(filtered_bars, function (d) { return (d.date) }).keys();
 
     const color = d3.scaleOrdinal()
         .domain(subgroups)
@@ -391,7 +436,7 @@ Promise.all([
         .padding([0.2]);
 
     const yScale = d3.scaleLinear()
-        .domain([0, d3.max(filtered_bars, function(d) { return d.nszy + d.additional})])
+        .domain([0, d3.max(filtered_bars, function(d) { return d.positive})])
         .range([chartInnerHeight, 0]);
 
     svgBars.append("g")
@@ -407,9 +452,9 @@ Promise.all([
 
     function drawBars(df) {
 
-        groups = d3.map(df, function (d) { return (d.zvit_date) }).keys();
+        groups = d3.map(df, function (d) { return (d.date) }).keys();
 
-        yScale.domain([0, d3.max(df, function(d) { return d.nszy + d.additional})]);
+        yScale.domain([0, d3.max(df, function(d) { return d.positive })]);
 
         var stackedData = d3.stack()
             .keys(subgroups)
@@ -418,10 +463,13 @@ Promise.all([
         redrawBars();
 
         function redrawBars(){
-            var chartOuterWidth = d3.select("#rt-chart-wrapper").node().getBoundingClientRect().width;
-            var chartInnerWidth = chartOuterWidth - 80;
-            var chartOuterHeight = 400;
-            var chartInnerHeight = 320;
+           chartOuterWidth = d3.select("#rt-chart-wrapper").node().getBoundingClientRect().width;
+           chartInnerWidth = chartOuterWidth - 80;
+           chartOuterHeight = 400;
+           chartInnerHeight = 320;
+
+            d3.select('#main-amount').attr("width", chartOuterWidth);
+            svgBars.attr("width", chartOuterWidth);
 
             xScale
                 .domain(groups)
@@ -469,14 +517,15 @@ Promise.all([
 
             bars.enter()
                 .append("rect")
-                .attr("x", function (d) { return xScale(d.data.zvit_date); })
+                .attr("x", function (d) { return xScale(d.data.date); })
                 .attr("y", function (d) { return chartInnerHeight })
                 .attr("width", xScale.bandwidth())
                 .merge(bars)
                 .transition()
                 .duration(500)
-                .attr("x", function (d) { return xScale(d.data.zvit_date); })
+                .attr("x", function (d) { return xScale(d.data.date); })
                 .attr("y", function (d) { return yScale(d[1]); })
+                .attr("width", xScale.bandwidth())
                 .attr("height", function (d) { return yScale(d[0]) - yScale(d[1]); })
         }
 
@@ -489,19 +538,53 @@ Promise.all([
 
     /* radraw on table click */
     d3.selectAll("tr").on("click", function(d){
+
+
         let region = d3.select(this).attr("data");
+        let row_id = d3.select(this).attr("id");
 
         let new_rtData =  data[0].filter(function (d) {
             return d.region === region
         });
 
         let new_barsData = data[1].filter(function (d) {
-            return d.region === region
+            return d.state === region
         });
 
         drawRt(new_rtData);
         drawBars(new_barsData);
 
-    })
+        $('html, body').animate({
+            scrollTop: $("#charts-container").offset().top
+        }, 800, function(){})
+
+
+        })
 
 });
+
+
+function leftJoin(left, right, left_id, right_id, col_to_join) {
+    var result = [];
+    _.each(left, function (litem) {
+        var f = _.filter(right, function (ritem) {
+            return ritem[right_id] == litem[left_id];
+        });
+        if (f.length == 0) {
+            f = [{}];
+        }
+        _.each(f, function (i) {
+            var newObj = {};
+            _.each(litem, function (v, k) {
+                newObj[k] = v;
+            });
+            _.each(i, function (v, k) {
+                if(k == col_to_join) {
+                    newObj[k] = v;
+                }
+            });
+            result.push(newObj);
+        });
+    });
+    return result;
+}
