@@ -6,10 +6,9 @@ Promise.all([
     d3.csv("data/states.csv")
 ]).then(function(data){
 
-
     /* розміри */
     var chartOuterWidth = d3.select("#rt-chart-wrapper").node().getBoundingClientRect().width;
-    var chartInnerWidth = chartOuterWidth - 80;
+    var chartInnerWidth = chartOuterWidth - 50;
     var chartOuterHeight = 400;
     var chartInnerHeight = 320;
 
@@ -81,16 +80,18 @@ Promise.all([
         .style("font-weight", function(d){ return d.region === "Україна" || d.region === "м. Київ" ? "bold": "normal" });
 
 
-
     rows.append('td')
         .text(function (d) {   return d.median.toFixed(2); })
-        .style("font-weight", function(d){ return d.region === "Україна" || d.region === "м. Київ" ? "bold": "normal" });;
+        .style("font-weight", function(d){ return d.region === "Україна" || d.region === "м. Київ" ? "bold": "normal" })
+        .style("color", function(d){ return d.median >=1 ? "rgb(235, 83, 88)": "rgb(53, 179, 46)" });
 
     rows.append('td')
-        .text(function (d) {   return d.positive; });
+        .text(function (d) {   return d.positive; })
+        .style("font-weight", function(d){ return d.region === "Україна" || d.region === "м. Київ" ? "bold": "normal" })
+       ;
 
     rows.sort( function(a, b) { return b.median - a.median })
-        .style("font-weight", function(d){ return d.region === "Україна" || d.region === "м. Київ" ? "bold": "normal" });;
+        ;
 
 
 
@@ -116,7 +117,7 @@ Promise.all([
         .attr("height", chartOuterHeight)
         .attr("id", "main-rt")
         .append("g")
-        .attr("transform", "translate(50,50)");
+        .attr("transform", "translate(30,50)");
 
     const borderLine = svgRt.append("line")
         .attr("x1", 0)
@@ -144,6 +145,27 @@ Promise.all([
         .attr("text-anchor", "start")
         .style("font-weight", "bold");
 
+    var leftNote = svgRt.append("text")
+        .attr("class", "left-note")
+        .attr("x", "20")
+        .attr("y", yScale_rt(0.9))
+        .attr("text-anchor", "start")
+        .style("font-size", "13px")
+        .style("pointer-events", "none")
+        .attr("fill", "grey")
+        .text("Лінія на графіку, це середнє значення Rt отримане за допомогою моделювання")
+        .call(wrap, 120);
+
+    var rightNote = svgRt.append("text")
+        .attr("class", "right-note")
+        .attr("y", yScale_rt(0.9))
+        .attr("x", chartInnerWidth - 20)
+        .attr("text-anchor", "end")
+        .style("font-size", "13px")
+        .style("pointer-events", "none")
+        .attr("fill", "grey")
+        .text("Прозора зона навколо – це інтервал найбільш ймовірних змодельованих значень Rt")
+        .call(wrap, 110);
 
 
     /* region label */
@@ -214,13 +236,11 @@ Promise.all([
         .text(borderRt[0].median.toFixed(2))
         .style("font-size", "12px");
 
-
-
-    var focus = svgRt.append("g")
+    var focus_rt = svgRt.append("g")
         .attr("class", "focus")
         .style("display", "none");
 
-    focus.append("line")
+    focus_rt.append("line")
         .attr("class", "x")
         .style("stroke", "grey")
         .style("stroke-dasharray", "3.3")
@@ -228,12 +248,12 @@ Promise.all([
         .attr("y1", yScale_rt(1.6))
         .attr("y2", yScale_rt(0.6));
 
-    focus.append("text")
+    focus_rt.append("text")
         .attr("class", "text-date")
         .attr("y", chartInnerHeight - 50)
         .style("font-size", "14px");
 
-    focus.append("text")
+    focus_rt.append("text")
         .attr("class", "text-Rt")
         .attr("y", chartInnerHeight - 35)
         .style("font-size", "14px");
@@ -244,10 +264,12 @@ Promise.all([
         .attr("width", chartInnerWidth)
         .attr("height", chartInnerHeight)
         .on("mouseover", function () {
-            focus.style("display", null);
+            focus_rt.style("display", null);
+            d3.select(".right-note").style("opacity", 0.5);
+            d3.select(".left-note").style("opacity", 0.5);
         })
         .on("mouseout", function () {
-            focus.style("display", "none")
+            focus_rt.style("display", "none")
         });
 
 
@@ -262,7 +284,7 @@ Promise.all([
         function redrawRt(){
 
             chartOuterWidth = d3.select("#rt-chart-wrapper").node().getBoundingClientRect().width;
-            chartInnerWidth = chartOuterWidth - 80;
+            chartInnerWidth = chartOuterWidth - 50;
             let borderRt_new = df.filter(function (d) {
                 return formatDate(d.date) === formatDate(ourDate)
             });
@@ -273,8 +295,10 @@ Promise.all([
             d3.select('#main-rt').attr("width", chartOuterWidth);
             svgRt.attr("width", chartOuterWidth);
 
+
+
             selectedRegion
-                .text(df[0].region.replace("Ukraine", "Україна") );
+                .text(df[0].region + ", динаміка Rt" );
 
 
             svgRt.select(".y.axis")
@@ -389,17 +413,17 @@ Promise.all([
                 d0 = df[i - 1],
                 d1 = df[i],
                 d = x0 - d0.date > d1.date - x0 ? d1 : d1;
-            focus.attr("transform", "translate(" + xScale_rt(d.date) + "," + 0 + ")");
+            focus_rt.attr("transform", "translate(" + xScale_rt(d.date) + "," + 0 + ")");
 
 
-            focus.select("text.text-date")
+            focus_rt.select("text.text-date")
                 .attr("x", function () {
                     return xScale_rt(d.date) > (chartInnerWidth / 2) ? -( this.getBBox().width + 9) : 9
                 })
                 .html(d3.timeFormat("%d-%m, %Y")(d.date));
 
 
-            focus.select("text.text-Rt")
+            focus_rt.select("text.text-Rt")
                 .attr("x", function () {
                     return xScale_rt(d.date) > (chartInnerWidth / 2) ? -( this.getBBox().width + 9) : 9
                 })
@@ -415,14 +439,13 @@ Promise.all([
     /* -----------------------------
             draw bars -------------- */
 
-
     const svgBars = d3.select("#amount-chart")
         .append("svg")
         .attr("width", chartOuterWidth)
         .attr("height", chartOuterHeight)
         .attr("id", "main-amount")
         .append("g")
-        .attr("transform", "translate(50,50)");
+        .attr("transform", "translate(30,50)");
 
     const subgroups = ["base","additional"];
 
@@ -430,15 +453,19 @@ Promise.all([
 
     const color = d3.scaleOrdinal()
         .domain(subgroups)
-        .range(['grey', '#89cff0']);
+        .range(['rgb(235, 83, 88)', '#89cff0']);
 
     const xScale = d3.scaleBand()
         .domain(groups)
         .range([0, chartInnerWidth])
         .padding([0.2]);
 
+    const x = d3.scaleLinear()
+        .domain([min_date_bars, max_date_bars])
+        .range([0, chartInnerWidth]);
+
     const yScale = d3.scaleLinear()
-        .domain([0, d3.max(filtered_bars, function(d) { return d.positive})])
+        .domain([0, 900])
         .range([chartInnerHeight, 0]);
 
     svgBars.append("g")
@@ -449,14 +476,57 @@ Promise.all([
         .attr("class", "x-axis")
         .attr("transform", "translate(0," + chartInnerHeight + ")");
 
+    var chartTitle = svgBars.append("text")
+        .attr("transform", "translate(0," + -30 + ")")
+        .attr("x", "0")
+        .attr("text-anchor", "start")
+        .style("font-weight", "bold")
+        .text("Кількість нових випадків за день");
+
+    var focus_bars = svgBars.append("g")
+        .attr("class", "focus_bars")
+        .style("display", "none");
+
+    focus_bars.append("line")
+        .attr("class", "x")
+        .style("stroke", "grey")
+        .style("stroke-dasharray", "3.3")
+        .style("opacity", 0.5)
+        .attr("y1", 0)
+        .attr("y2", chartInnerHeight);
+
+    focus_bars.append("text")
+        .attr("class", "text-date")
+        .attr("y", 35)
+        .style("font-size", "14px");
+
+    focus_bars.append("text")
+        .attr("class", "text-Rt")
+        .attr("y", 50)
+        .style("font-size", "14px");
+
+    //overlay
+    var overlay_bars = svgBars.append("rect")
+        .attr("class", "overlay")
+        .attr("width", chartInnerWidth)
+        .attr("height", chartInnerHeight)
+        .on("mouseover", function () {
+            focus_bars.style("display", null);
+        })
+        .on("mouseout", function () {
+            focus_bars.style("display", "none")
+        });
+
 
     drawBars(filtered_bars);
 
     function drawBars(df) {
+        var max_val = d3.max(df, function(d) { return d.positive });
+        max_val = Math.ceil(max_val / 25) * 25;
 
         groups = d3.map(df, function (d) { return (d.date) }).keys();
 
-        yScale.domain([0, d3.max(df, function(d) { return d.positive })]);
+        yScale.domain([0, max_val]);
 
         var stackedData = d3.stack()
             .keys(subgroups)
@@ -466,7 +536,7 @@ Promise.all([
 
         function redrawBars(){
            chartOuterWidth = d3.select("#rt-chart-wrapper").node().getBoundingClientRect().width;
-           chartInnerWidth = chartOuterWidth - 80;
+           chartInnerWidth = chartOuterWidth - 50;
            chartOuterHeight = 400;
            chartInnerHeight = 320;
 
@@ -482,7 +552,9 @@ Promise.all([
                 .duration(0)
                 .call(d3.axisLeft(yScale)
                     .ticks(5)
-                    .tickSize(-chartInnerWidth));
+                    .tickSize(-chartInnerWidth)
+                    .tickValues([0, max_val/5, max_val/5 * 2, max_val/5 * 3, max_val/5 * 4, max_val])
+                );
 
 
             svgBars.select(".x-axis")
@@ -493,7 +565,8 @@ Promise.all([
                     .tickFormat(function (d) {
                         return formatDate(d)
                     })
-                    .tickValues([min_date_bars, max_date_bars]));
+                    .tickValues([min_date_bars, max_date_bars])
+                );
 
             // Show the bars
             var barsLayer = svgBars
@@ -522,6 +595,8 @@ Promise.all([
                 .attr("x", function (d) { return xScale(d.data.date); })
                 .attr("y", function (d) { return chartInnerHeight })
                 .attr("width", xScale.bandwidth())
+                .style("pointer-events", "none")
+
                 .merge(bars)
                 .transition()
                 .duration(500)
@@ -529,6 +604,38 @@ Promise.all([
                 .attr("y", function (d) { return yScale(d[1]); })
                 .attr("width", xScale.bandwidth())
                 .attr("height", function (d) { return yScale(d[0]) - yScale(d[1]); })
+
+
+            $('g.focus_bars').remove().appendTo('svg#main-amount g');
+        }
+
+
+        overlay_bars
+            .on("mousemove", mousemove);
+
+
+        /* mouseover */
+        function mousemove() {
+            var x0 = x.invert(d3.mouse(this)[0]),
+                i = bisectDate(df, x0, 1),
+                d0 = df[i - 1],
+                d1 = df[i],
+                d = x0 - d0.date > d1.date - x0 ? d1 : d1;
+            focus_bars.attr("transform", "translate(" + xScale(d.date) + "," + 0 + ")");
+
+
+            focus_bars.select("text.text-date")
+                .attr("x", function () {
+                    return xScale(d.date) > (chartInnerWidth / 2) ? -( this.getBBox().width + 9) : 9
+                })
+                .html(d3.timeFormat("%d-%m, %Y")(d.date));
+
+
+            focus_bars.select("text.text-Rt")
+                .attr("x", function () {
+                    return xScale(d.date) > (chartInnerWidth / 2) ? -( this.getBBox().width + 9) : 9
+                })
+                .html(d.positive);
         }
 
         window.addEventListener("resize", redrawBars);
@@ -544,7 +651,6 @@ Promise.all([
 
         let region = d3.select(this).attr("data");
         let row_top = d3.select(this).node().getBoundingClientRect().top;
-        console.log(d3.select(this).node());
 
         let new_rtData =  data[0].filter(function (d) {
             return d.region === region
@@ -592,3 +698,46 @@ function leftJoin(left, right, left_id, right_id, col_to_join) {
     return result;
 }
 
+function f(num){
+    let count = 0;
+    while(num > 1){
+        count ++;
+        num/= 10;
+    }
+    return Math.pow(10, count-1) * (Math.round(num) ? 10: 1);
+}
+
+
+
+function wrap(text, width) {
+    text.each(function () {
+        var text = d3.select(this),
+            words = text.text().split(/\s+/).reverse(),
+            word,
+            line = [],
+            lineNumber = 0,
+            lineHeight = 1.1, // ems
+            x = text.attr("x"),
+            y = text.attr("y"),
+            dy = 0,
+            tspan = text.text(null)
+                .append("tspan")
+                .attr("x", x)
+                .attr("y", y)
+               .attr("dy", dy + "em");
+        while (word = words.pop()) {
+            line.push(word);
+            tspan.text(line.join(" "));
+            if (tspan.node().getComputedTextLength() > width) {
+                line.pop();
+                tspan.text(line.join(" "));
+                line = [word];
+                tspan = text.append("tspan")
+                    .attr("x", x)
+                    .attr("y", y)
+                    .attr("dy", ++lineNumber * lineHeight + dy + "em")
+                    .text(word);
+            }
+        }
+    });
+}

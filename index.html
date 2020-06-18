@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Title</title>
 </head>
 <style>
@@ -56,6 +58,11 @@
 
     .text-date {
        font-weight: bold;
+        fill: black;
+    }
+
+    .text-Rt {
+        fill: black;
     }
 
 
@@ -96,6 +103,8 @@
     @media(max-width: 812px){
         #charts-container {
             display: block;
+            width: 100%;
+            margin: auto;
         }
 
         table {
@@ -154,7 +163,7 @@
 
 
 
-<!--<script src="lib/jquery-3.3.1.js"></script>-->
+<script src="lib/jquery-3.3.1.js"></script>
 <script src="lib/d3v5.min.js"></script>
 <script src="lib/share-behavior.js"></script>
 <script src="lib/underscore-min.js"></script>
@@ -285,7 +294,7 @@
 
         /* region label */
         var text = multiple.append("text")
-                .attr("transform", "translate(0," + -10 + ")")
+                .attr("transform", "translate(0," + -20 + ")")
                 .attr("x", "0")
                 .attr("text-anchor", "start")
                 .style("font-weight", "bold")
