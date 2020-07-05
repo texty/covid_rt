@@ -62,9 +62,9 @@ Promise.all([
         tbody = table.append('tbody');
 
     thead.append('tr').selectAll('th')
-        .data(["регіон", "Rt ("+ formatDate(max_date_rt) + ")", "нових випадків ("+ formatDate(max_date_rt) + ")" ]).enter()
+        .data(["регіон", "R<sub>t</sub> ("+ formatDate(max_date_rt) + ")", "нових випадків ("+ formatDate(max_date_rt) + ")" ]).enter()
         .append('th')
-        .text(function (d) { return d; });
+        .html(function (d) { return d; });
 
     var rows = tbody.selectAll('tr')
         .data(table_data)
